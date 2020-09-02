@@ -256,7 +256,7 @@ function keyTyped(){
         typeToPlace = 2;
     else return;
     return false;
-}
+} 
 
 function mapViewWidth(){
     return MAP_WIDTH*pow(1.25,-zoomAmt);
