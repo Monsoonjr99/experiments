@@ -1,4 +1,4 @@
-const VERSION = "--DEV--";
+const PROJECT_VERSION = "--DEV--";
 
 const HIVE_SIZE = 30;
 const BEE_MASS = 3;
@@ -10,7 +10,7 @@ const DEFAULT_STEP_DURATION = 25;
 var raining, tempVec, lastRender, speed, paused, dark;
 
 function setup() {
-    setVersion("Exploding Bubbles v",VERSION);
+    setVersion("Exploding Bubbles v",PROJECT_VERSION);
 
     createCanvas(document.body.clientWidth, document.body.clientHeight - 1);
     raining = false;
@@ -822,17 +822,17 @@ function keyPressed(){
     }else if(keyCode === 219){
         if(speed > -5)
             speed--;
-    }else if(key === 'R'){
+    }else if(key === 'r'){
         raining = !raining;
-    }else if(key === 'Q'){
+    }else if(key === 'q'){
         new ModernDebris(mouseX, mouseY, random(10,20));
-    }else if(key === 'K'){
+    }else if(key === 'k'){
         new Flare(mouseX, mouseY, 5, color(random(255),random(255),random(255)), undefined, true);
-    }else if(key === 'H'){
+    }else if(key === 'h'){
         new Hive(mouseX, mouseY, random(80, 150), color(random(255),random(255),random(255)));
-    }else if(key === 'X'){
+    }else if(key === 'x'){
         new Lightning(mouseX, mouseY);
-    }else if(key === 'D'){
+    }else if(key === 'd'){
         dark = !dark;
     }
 }
