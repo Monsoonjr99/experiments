@@ -330,7 +330,6 @@ class Hive extends Entity{
         this.m = m;
         this.color = c;
         this.ill = i;
-        this.killer = false;
         this.armor = ar || 0;
     }
 
@@ -347,21 +346,6 @@ class Hive extends Entity{
             this.vel.x *= -0.9;
         }
         this.pos.add(this.vel);
-        if(this.killer){
-            if(this.armor){
-                new ModernDebris(this.pos.x, this.pos.y, this.armor);
-            }
-            let n = 0;
-            while(n<this.m){
-                let l = this.m-n;
-                let m1 = random(1,5);
-                m1 = min(l,m1);
-                new Flare(this.pos.x+HIVE_SIZE/2,this.pos.y+HIVE_SIZE/2,m1,this.color,undefined,true);
-                n += m1;
-            }
-            this.dead = true;
-            return;
-        }
         for(let f of Entity.query(Entity.types.flare)){
             if(!f.dead){
                 if(f.pos.x>this.pos.x && f.pos.x<this.pos.x+HIVE_SIZE && f.pos.y>this.pos.y && f.pos.y<this.pos.y+HIVE_SIZE){
@@ -371,8 +355,9 @@ class Hive extends Entity{
                         //     this.armor = 0;
                         if(Math.random() < 0.1 * -Math.log2(this.armor / MAX_ARMOR)){
                             this.m += f.m;
-                            this.killer = true;
+                            this.explode(true);
                             f.dead = true;
+                            return;
                         }else{
                             if(abs(f.pos.x - this.pos.x) > abs(f.pos.y - this.pos.y))
                                 f.vel.y *= -1;
@@ -383,11 +368,13 @@ class Hive extends Entity{
                         }
                     }else{
                         this.m += f.m;
+                        f.dead = true;
                         if(((f.rain && random()<0.3) || f.ill) && !this.armor)
                             this.ill = true;
-                        if(f.killer)
-                            this.killer = true;
-                        f.dead = true;
+                        if(f.killer){
+                            this.explode(true);
+                            return;
+                        }
                     }
                 }
             }
@@ -398,7 +385,7 @@ class Hive extends Entity{
         }
         if(this.m>350 && random()<0.01){
             if(this.ill){
-                this.killer = true;
+                this.explode(true);
                 return;
             }
             let armor = 0;
@@ -410,13 +397,8 @@ class Hive extends Entity{
             this.m /= 2;
         }
         if(raining && this.armor && random() < 0.0002){
-            new Lightning(this.pos.x, this.pos.y);
-            for(let c of Entity.query(Entity.types.circle)){
-                if(c.pos.dist(this.pos) < c.r())
-                    c.explode();
-            }
-
-            // here be dragons
+            Lightning.strike(this.pos.x, this.pos.y);
+            return;
         }
         if(random()<0.15) this.m -= random(0.2,1);
         if(this.m<5){
@@ -439,6 +421,21 @@ class Hive extends Entity{
         fill(red(cl),green(cl),blue(cl),map(this.m,5,325,30,240,true));
         rect(p.x,p.y,HIVE_SIZE,HIVE_SIZE);
         strokeWeight(1);
+    }
+
+    explode(killer){
+        if(this.armor){
+            new ModernDebris(this.pos.x, this.pos.y, this.armor);
+        }
+        let n = 0;
+        while(n<this.m){
+            let l = this.m-n;
+            let m1 = random(1,5);
+            m1 = min(l,m1);
+            new Flare(this.pos.x+HIVE_SIZE/2,this.pos.y+HIVE_SIZE/2,m1,this.color,undefined,killer);
+            n += m1;
+        }
+        this.dead = true;
     }
 }
 
@@ -708,24 +705,8 @@ class ModernDebris extends Entity{
             this.rot = this.bee.angle;
             this.pos.add(-(13+r)*cos(this.rot),-(13+r)*sin(this.rot));
         }
-        if(raining && random() < 0.0002){
-            new Lightning(this.pos.x, this.pos.y);
-            if(this.m > 5){
-                let m1 = random(0.1,0.35)*this.m;
-                let m2 = random(0.1,0.35)*this.m;
-                new ModernDebris(this.pos.x,this.pos.y,m1);
-                new ModernDebris(this.pos.x,this.pos.y,m2);
-                this.m -= m1 + m2;
-            }
-            if(this.bee){
-                this.bee.dead = true;
-                this.bee = undefined;
-            }
-            for(let c of Entity.query(Entity.types.circle)){
-                if(c.pos.dist(this.pos) < c.r())
-                    c.explode();
-            }
-        }
+        if(raining && random() < 0.0002)
+            Lightning.strike(this.pos.x, this.pos.y);
     }
 
     draw(){
@@ -789,6 +770,43 @@ class Lightning extends Entity{
         endShape(CLOSE);
         pop();
     }
+
+    static strike(x, y){
+        let l = new Lightning(x, y);
+
+        let debris_to_be_striked = [];  // as lightning strikes on modern debris spawn new modern debris, this is to avoid double-counting from looping through the array as new entities are added
+        for(let d of Entity.query(Entity.types.modern_debris)){
+            if(d.pos.dist(l.pos) < d.r())
+                debris_to_be_striked.push(d);
+        }
+        for(let d of debris_to_be_striked){
+            if(d.m > 5){
+                let m1 = random(0.1,0.35)*d.m;
+                let m2 = random(0.1,0.35)*d.m;
+                new ModernDebris(d.pos.x,d.pos.y,m1);
+                new ModernDebris(d.pos.x,d.pos.y,m2);
+                d.m -= m1 + m2;
+            }
+            if(d.bee){
+                d.bee.dead = true;
+                d.bee = undefined;
+            }
+        }
+
+        for(let h of Entity.query(Entity.types.hive)){
+            if(x >= h.pos.x && x <= h.pos.x + HIVE_SIZE && y >= h.pos.y && y <= h.pos.y + HIVE_SIZE){
+                if(h.armor > 0){
+                    // here be dragons
+                }else
+                    h.explode(h.ill);
+            }
+        }
+
+        for(let c of Entity.query(Entity.types.circle)){
+            if(c.pos.dist(l.pos) < c.r())
+                c.explode();
+        }
+    }
 }
 
 class Dragon extends Entity{
@@ -831,7 +849,7 @@ function keyPressed(){
     }else if(key === 'h'){
         new Hive(mouseX, mouseY, random(80, 150), color(random(255),random(255),random(255)));
     }else if(key === 'x'){
-        new Lightning(mouseX, mouseY);
+        Lightning.strike(mouseX, mouseY);
     }else if(key === 'd'){
         dark = !dark;
     }
