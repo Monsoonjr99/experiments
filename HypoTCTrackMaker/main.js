@@ -1,7 +1,7 @@
 var HypoTrack = (function(){
     const TITLE = 'Hypo TC Track Maker';
     const VERSION = '20221224a';
-    const IDB_KEY = 'hypo-track';
+    const IDB_KEY = 'hypo-track-legacy';
 
     const WIDTH = 1000;
     const HEIGHT = 500;
