@@ -1,0 +1,10 @@
+#!/bin/bash
+
+awkpath="./awk-conway-life.awk"
+
+if [[ -n "$1" ]]; then
+  res=$(awk -f "$awkpath" "$1")
+  echo "$res" | tee "$1"
+else
+  echo "no file specified"
+fi
