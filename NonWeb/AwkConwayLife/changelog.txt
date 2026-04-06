@@ -1,0 +1,5 @@
+About: Says on the tin - Conway's Game of Life but in Awk
+
+v0.1 (2026-04-06):
+    + Initial release of main script
+    + Includes edit-in-place bash script
