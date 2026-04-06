@@ -1,3 +1,5 @@
+# AwkConwayLife v0.1
+
 BEGIN {
   RR=0;
   CC=0;
